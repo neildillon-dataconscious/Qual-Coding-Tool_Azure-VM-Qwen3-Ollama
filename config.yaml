@@ -1,1 +1,80 @@
+models:
+  embed_model: nomic-embed-text        # via Ollama; change if you prefer BGE-M3 local
+  gen_model: qwen3:7b-instruct         # via Ollama; used for LLM-based chunking & (optional) verify
+  reranker: BAAI/bge-reranker-base     # local cross-encoder for Mode A
+
+services:
+  weaviate_url: http://localhost:8080
+  ollama_url: http://localhost:11434
+
+chunking:
+  method: llm_semantic
+  target_tokens: 1000
+  min_tokens: 400
+  max_tokens: 1400
+  add_context_tokens: 120
+  respect_speaker_turns: true
+  boundary_llm:
+    enable: true
+    max_pairs_per_doc: 200
+    temperature: 0.0
+
+vector_store:
+  class_name: DocChunk
+  vector_index:
+    type: hnsw
+    efConstruction: 200
+    maxConnections: 64
+  bm25:
+    enable: true
+    properties: ["text"]
+
+retrieval:
+  mode: hybrid
+  alpha: 0.75                 # semantic-first (as you wanted)
+  top_k_pre_rerank: 500
+  top_k_final: 24
+  use_mmr: true
+  mmr_lambda: 0.5
+  min_score: 0.0
+  dedup_similarity: 0.92
+  per_doc_cap: null
+
+rerank:
+  enable: true
+  batch_size: 128
+  fp16: true
+  score_field: ce_score
+  min_ce_score: 0.0
+
+verification:
+  enable: false               # flip on if you want YES/NO checks
+  style: yes_no_reason
+  max_reason_chars: 140
+  temperature: 0.0
+
+paths:
+  docs_raw: data/docs_raw
+  docs_processed: data/docs_processed
+  outputs: outputs
+
+output:
+  csv_fields:
+    - criterion_id
+    - criterion_label
+    - subcriterion_id
+    - subcriterion_label
+    - doc_id
+    - source_path
+    - page
+    - char_start
+    - char_end
+    - excerpt
+    - retrieval_method
+    - score
+    - ce_score
+    - model_embed
+    - model_generate
+    - pipeline_version
+    - run_timestamp
 
