@@ -1,1 +1,37 @@
+version: '3.8'
+
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.25.9
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    env_file:
+      - ./weaviate.env
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+
+  # Optional convenience: run Ollama for Qwen3 locally on the VM
+  # If you already installed Qwen3 another way, remove this and point config.yaml to that endpoint.
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    command: >
+      /bin/sh -c "
+      /bin/ollama serve &
+      sleep 2 &&
+      # Pull a Qwen3 instruct model for chunking/verification
+      ollama pull qwen3:7b-instruct &&
+      # Pull a fast local embedding model
+      ollama pull nomic-embed-text &&
+      wait
+      "
+
+volumes:
+  weaviate_data:
+  ollama_data:
 
